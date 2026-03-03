@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spank Web</title>
+    <style>
+        body {
+            background-color: #000;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+        #status { font-size: 1.2rem; margin-bottom: 20px; color: #666; }
+        #btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(145deg, #ff0055, #cc0044);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+            cursor: pointer;
+        }
+        #btn:active { transform: scale(0.95); }
+        .log { margin-top: 20px; font-family: monospace; font-size: 0.8rem; color: #444; }
+    </style>
+</head>
+<body>
+
+    <div id="status">Нажмите кнопку, чтобы начать</div>
+    <button id="btn">ВКЛЮЧИТЬ</button>
+    <div class="log" id="log">Сила удара: 0</div>
+
+    <!-- Звуковой эффект (можно заменить на свою ссылку) -->
+    <audio id="spankSound" src="https://www.myinstants.com/media/sounds/spank.mp3" preload="auto"></audio>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const status = document.getElementById('status');
+        const log = document.getElementById('log');
+        const sound = document.getElementById('spankSound');
+        
+        let isActive = false;
+        let lastUpdate = 0;
+        const THRESHOLD = 25; // Порог чувствительности для S23 Ultra (экспериментально)
+
+        btn.addEventListener('click', () => {
+            if (!isActive) {
+                startSensors();
+                btn.textContent = "ВЫКЛЮЧИТЬ";
+                btn.style.background = "#444";
+                status.textContent = "Слушаю удары...";
+                isActive = true;
+            } else {
+                window.location.reload(); // Простой способ остановить
+            }
+        });
+
+        function startSensors() {
+            // Запрос разрешения на доступ к датчикам (нужно для iOS, на Android работает сразу)
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission();
+            }
+
+            window.addEventListener('devicemotion', (event) => {
+                if (!isActive) return;
+
+                const acc = event.acceleration; // Чистое ускорение без гравитации
+                if (!acc) return;
+
+                // Вычисляем общую силу вектора
+                const force = Math.sqrt(acc.x**2 + acc.y**2 + acc.z**2);
+
+                if (force > THRESHOLD) {
+                    const now = Date.now();
+                    if (now - lastUpdate > 500) { // Задержка 500мс, чтобы звук не двоился
+                        triggerSpank(force);
+                        lastUpdate = now;
+                    }
+                }
+            });
+        }
+
+        function triggerSpank(force) {
+            log.textContent = `Сила удара: ${force.toFixed(2)}`;
+            
+            // 1. Сброс и воспроизведение звука
+            sound.currentTime = 0;
+            sound.play();
+
+            // 2. Вибрация (Haptic feedback для S23 Ultra)
+            if ("vibrate" in navigator) {
+                // Имитируем резкий "шлепок" короткой мощной вибрацией
+                navigator.vibrate([50]); 
+            }
+
+            // Визуальный эффект
+            document.body.style.backgroundColor = "#330000";
+            setTimeout(() => { document.body.style.backgroundColor = "#000"; }, 100);
+        }
+    </script>
+</body>
+</html>
