@@ -3,155 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Spank Master S23</title>
+    <title>Spank Master</title>
     <style>
         body {
             background: #000;
-            color: #fff;
-            font-family: sans-serif;
+            margin: 0;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            margin: 0;
-            touch-action: manipulation;
+            overflow: hidden;
+            transition: background 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
-        }
-        /* Главная кнопка включения */
-        #startBtn {
-            width: 180px;
-            height: 60px;
-            border-radius: 30px;
-            border: 2px solid #555;
-            background: transparent;
-            color: white;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        #startBtn.active {
-            border-color: #00ff88;
-            color: #00ff88;
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
-        }
-        /* Кнопка ручного шлепка */
-        #manualBtn {
-            width: 250px;
-            height: 250px;
+        #toggleBtn {
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
-            border: none;
-            background: linear-gradient(145deg, #ff0055, #cc0044);
-            color: white;
-            font-size: 1.4rem;
+            border: 2px solid #333;
+            background: transparent;
+            color: #555;
+            font-size: 1.2rem;
             font-weight: bold;
-            box-shadow: 0 0 30px rgba(255, 0, 85, 0.4);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            transition: transform 0.05s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #manualBtn:active {
-            transform: scale(0.92);
-            background: #ff0055;
-        }
-        #debug {
-            margin-top: 30px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: #666;
-            text-align: center;
-            line-height: 1.5;
+        #toggleBtn.active {
+            border-color: #ff0055;
+            color: #ff0055;
+            box-shadow: 0 0 40px rgba(255, 0, 85, 0.3);
+            transform: scale(1.05);
         }
         .flash { background: #440011 !important; }
     </style>
 </head>
 <body>
 
-    <div class="controls">
-        <button id="manualBtn">ТЕСТ<br>(ШЛЕПОК)</button>
-        <button id="startBtn">ВКЛЮЧИТЬ ДАТЧИК</button>
-    </div>
-
-    <div id="debug">
-        Статус: Ожидание активации<br>
-        Файлы: 00.mp3 - 59.mp3
-    </div>
+    <button id="toggleBtn">ВКЛЮЧИТЬ</button>
 
     <script>
-        const startBtn = document.getElementById('startBtn');
-        const manualBtn = document.getElementById('manualBtn');
-        const debug = document.getElementById('debug');
-        
-        let sensorEnabled = false;
+        const btn = document.getElementById('toggleBtn');
+        let isEnabled = false;
         let lastHit = 0;
-        
+
         const CONFIG = {
             totalFiles: 60,
-            basePath: 'audio/sexy/',
-            threshold: 22, 
-            cooldown: 300 
+            path: 'audio/sexy/',
+            threshold: 12, // Пониженный порог (более чувствительный)
+            cooldown: 250  // Минимальная пауза между звуками
         };
 
-        // Функция воспроизведения (общая для кнопки и датчика)
-        function triggerAction(source = "manual", force = 0) {
-            // Выбираем случайный файл
-            const num = Math.floor(Math.random() * CONFIG.totalFiles);
-            const fileName = num.toString().padStart(2, '0') + '.mp3';
-            const url = CONFIG.basePath + fileName;
-
-            // Играем звук
-            const audio = new Audio(url);
-            audio.play().catch(e => {
-                debug.innerHTML = "Ошибка: нажмите ВКЛЮЧИТЬ перед началом";
-            });
-
-            // Вибрация
-            if ("vibrate" in navigator) navigator.vibrate(60);
-
-            // Визуальный эффект
-            document.body.classList.add('flash');
-            setTimeout(() => document.body.classList.remove('flash'), 80);
+        btn.addEventListener('click', () => {
+            isEnabled = !isEnabled;
             
-            // Лог
-            debug.innerHTML = `Источник: ${source}<br>Файл: ${fileName}${force ? '<br>Сила: ' + Math.round(force) : ''}`;
-        }
+            // "Прогрев" аудио-движка (нужно для политик браузера)
+            const unlock = new Audio();
+            unlock.play().catch(() => {});
 
-        // Кнопка включения датчиков
-        startBtn.addEventListener('click', () => {
-            sensorEnabled = !sensorEnabled;
-            
-            // Нужно для разблокировки аудио в браузере
-            const silent = new Audio();
-            silent.play().catch(() => {});
-
-            if (sensorEnabled) {
-                startBtn.textContent = "ДАТЧИК ВКЛ";
-                startBtn.classList.add('active');
-                debug.innerHTML = "Датчик активен. Тряхните телефон!";
+            if (isEnabled) {
+                btn.textContent = "РАБОТАЕТ";
+                btn.classList.add('active');
             } else {
-                startBtn.textContent = "ВКЛЮЧИТЬ ДАТЧИК";
-                startBtn.classList.remove('active');
-                debug.innerHTML = "Датчик выключен";
+                btn.textContent = "ВКЛЮЧИТЬ";
+                btn.classList.remove('active');
             }
         });
 
-        // Кнопка ручного теста
-        manualBtn.addEventListener('click', () => {
-            triggerAction("Кнопка");
-        });
+        function doSpank() {
+            const num = Math.floor(Math.random() * CONFIG.totalFiles);
+            const file = num.toString().padStart(2, '0') + '.mp3';
+            
+            const audio = new Audio(CONFIG.path + file);
+            audio.volume = 1.0; // Максимальная громкость
+            audio.play();
 
-        // Слушатель движения
+            if ("vibrate" in navigator) {
+                navigator.vibrate(70); // Четкая вибрация
+            }
+
+            document.body.classList.add('flash');
+            setTimeout(() => document.body.classList.remove('flash'), 80);
+        }
+
         window.addEventListener('devicemotion', (event) => {
-            if (!sensorEnabled) return;
+            if (!isEnabled) return;
 
             const acc = event.acceleration;
             if (!acc || acc.x === null) return;
@@ -161,7 +97,7 @@
             if (force > CONFIG.threshold) {
                 const now = Date.now();
                 if (now - lastHit > CONFIG.cooldown) {
-                    triggerAction("Датчик", force);
+                    doSpank();
                     lastHit = now;
                 }
             }
